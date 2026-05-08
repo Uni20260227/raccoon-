@@ -3,134 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ラクーンデンタル問診プロトタイプ</title>
-    <!-- jsPDFライブラリの読み込み -->
+    <title>ラクーンデンタル スマート問診</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        :root { --primary-color: #4a90e2; --bg-color: #f7f9fc; }
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif; background-color: var(--bg-color); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #333; }
         #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .message { max-width: 80%; padding: 12px 16px; border-radius: 18px; line-height: 1.5; font-size: 15px; }
-        .bot { background-color: #ffffff; align-self: flex-start; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .user { background-color: #007aff; align-self: flex-end; color: white; }
-        #input-area { background: white; padding: 20px; border-top: 1px solid #ddd; display: flex; flex-direction: column; gap: 10px; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; width: 100%; box-sizing: border-box; }
-        .button-group { display: flex; flex-wrap: wrap; gap: 8px; }
-        button { padding: 10px 16px; border: none; border-radius: 20px; background-color: #e9ecef; cursor: pointer; transition: 0.2s; }
-        button:hover { background-color: #dee2e6; }
-        .primary-btn { background-color: #007aff; color: white; }
+        .message { max-width: 85%; padding: 14px 18px; border-radius: 20px; line-height: 1.6; font-size: 15px; position: relative; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .bot { background-color: white; align-self: flex-start; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-bottom-left-radius: 2px; }
+        .user { background-color: var(--primary-color); align-self: flex-end; color: white; border-bottom-right-radius: 2px; }
+        #input-area { background: white; padding: 20px; border-top: 1px solid #eee; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        button { padding: 12px 20px; border: 1px solid var(--primary-color); border-radius: 25px; background: white; color: var(--primary-color); cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s; }
+        button:hover { background: var(--primary-color); color: white; }
+        input[type="text"], input[type="date"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div id="chat-container">
-    <div class="message bot">ラクーンデンタルへようこそ。問診を担当するボットです。まずはあなたのお名前をフルネームで教えてください。</div>
-</div>
-
-<div id="input-area">
-    <div id="dynamic-input">
-        <input type="text" id="user-input" placeholder="名前を入力..." onkeypress="handleKeyPress(event)">
-    </div>
-</div>
+<div id="chat-container"></div>
+<div id="input-area" id="controls"></div>
 
 <script>
     const { jsPDF } = window.jspdf;
-    const chatContainer = document.getElementById('chat-container');
-    const dynamicInput = document.getElementById('dynamic-input');
-    
-    let step = 0;
-    let userData = { name: '', chiefComplaint: '', subDetail: '' };
+    const chat = document.getElementById('chat-container');
+    const controls = document.getElementById('input-area');
 
-    // チャットにメッセージを追加
-    function addMessage(text, sender) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${sender}`;
-        msgDiv.innerText = text;
-        chatContainer.appendChild(msgDiv);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+    // 収集する問診データ
+    let data = {
+        name: "", birth: "", tel: "", 
+        mainSymptom: "", details: "", medicalHistory: [], medications: ""
+    };
+
+    function addMsg(text, type) {
+        const d = document.createElement('div');
+        d.className = `message ${type}`;
+        d.innerHTML = text;
+        chat.appendChild(d);
+        chat.scrollTop = chat.scrollHeight;
     }
 
-    // キー入力（Enter）時の処理
-    function handleKeyPress(e) {
-        if (e.key === 'Enter') processInput(e.target.value);
-    }
-
-    // 入力処理のメインロジック
-    function processInput(value) {
-        if (!value) return;
-        addMessage(value, 'user');
-
-        if (step === 0) {
-            userData.name = value;
-            step = 1;
-            setTimeout(() => {
-                addMessage(`${userData.name}様ですね。本日はどうされましたか？一番近いものを選んでください。`, 'bot');
-                showOptions(['痛みがある', '詰め物が取れた', '歯石取り・クリーニング', '審美・ホワイトニング']);
-            }, 800);
-        }
-    }
-
-    // 選択肢ボタンを表示
-    function showOptions(options) {
-        dynamicInput.innerHTML = '';
-        const group = document.createElement('div');
-        group.className = 'button-group';
-        options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.innerText = opt;
-            btn.onclick = () => handleOption(opt);
-            group.appendChild(btn);
+    // ステップ管理
+    function start() {
+        addMsg("ラクーンデンタルへようこそ。<br>私は歯科専門の問診ボットです。まずはあなたのお名前を教えてください。", "bot");
+        renderInput("text", "名前を入力...", (v) => {
+            data.name = v;
+            askBirth();
         });
-        dynamicInput.appendChild(group);
     }
 
-    // ボタン選択時の処理
-    function handleOption(option) {
-        addMessage(option, 'user');
-        userData.chiefComplaint = option;
+    function askBirth() {
+        addMsg(`${data.name}様ですね。次に生年月日を教えてください。`, "bot");
+        renderInput("date", "", (v) => {
+            data.birth = v;
+            askSymptom();
+        });
+    }
 
-        if (option === '痛みがある') {
-            addMessage("それはお辛いですね…。いつ頃から痛み始めましたか？", "bot");
-            // ここでさらに分岐させる（今回は省略）
-            finishInquiry();
-        } else if (option === '詰め物が取れた') {
-            addMessage("外れてしまうと、お食事など不便ですよね。外れたものはお手元にありますか？", "bot");
-            showOptions(['ある', 'ない']);
-            step = 99; // 完了へ
+    function askSymptom() {
+        addMsg("本日はどうされましたか？あてはまるものを選んでください。", "bot");
+        renderButtons([
+            { l: "痛みがある", v: "痛み" },
+            { l: "腫れている", v: "腫れ" },
+            { l: "詰め物が取れた", v: "脱離" },
+            { l: "検診・クリーニング", v: "検診" },
+            { l: "審美・ホワイトニング", v: "審美" }
+        ], handleSymptom);
+    }
+
+    function handleSymptom(v) {
+        data.mainSymptom = v;
+        if (v === "痛み") {
+            addMsg("それはお辛いですね。どのあたりが痛みますか？", "bot");
+            renderButtons([
+                { l: "歯が痛い", v: "歯" },
+                { l: "歯ぐきが痛い", v: "歯ぐき" },
+                { l: "顎（あご）が痛い", v: "顎" }
+            ], (part) => {
+                data.details = part + "が痛む";
+                addMsg("なるほど。専門的に拝見しますね。特に『何もしなくても痛い』といった症状はありますか？", "bot");
+                renderButtons([{l:"はい",v:"自発痛あり"},{l:"いいえ",v:"なし"}], askHistory);
+            });
+        } else if (v === "脱離") {
+            addMsg("外れてしまうと不便ですよね。外れたものはお手元にありますか？", "bot");
+            renderButtons([{l:"ある",v:"現物あり"},{l:"ない",v:"紛失"}], askHistory);
         } else {
-            finishInquiry();
+            askHistory();
         }
     }
 
-    function finishInquiry() {
-        dynamicInput.innerHTML = '<p style="color:gray; font-size:14px;">問診が完了しました。</p>';
-        setTimeout(() => {
-            addMessage("ありがとうございます。入力いただいた内容で問診票を作成します。少々お待ちください。", "bot");
-            const btn = document.createElement('button');
-            btn.innerText = "問診票PDFをダウンロード";
-            btn.className = "primary-btn";
-            btn.onclick = generatePDF;
-            dynamicInput.appendChild(btn);
-        }, 1000);
+    function askHistory() {
+        addMsg("安全な治療のため、現在治療中の病気やアレルギーはありますか？（複数選択可）", "bot");
+        // ここは簡易的にテキスト入力へ
+        renderInput("text", "例：高血圧、糖尿病、薬のアレルギーなど", (v) => {
+            data.medicalHistory = v;
+            finalize();
+        });
     }
 
-    // PDF生成ロジック
-    async function generatePDF() {
+    function finalize() {
+        addMsg("ありがとうございます。全ての質問が完了しました。<br>最後にこちらの『問診票PDF』を作成してください。受付で提示いただくとスムーズです。", "bot");
+        renderButtons([{ l: "問診票PDFを作成・保存", v: "pdf" }], generatePDF);
+    }
+
+    // UI生成補助
+    function renderInput(type, ph, cb) {
+        controls.innerHTML = `<input type="${type}" id="i" placeholder="${ph}">`;
+        const i = document.getElementById('i');
+        i.onkeypress = (e) => { if(e.key==='Enter'){ addMsg(i.value, "user"); cb(i.value); } };
+    }
+
+    function renderButtons(opts, cb) {
+        controls.innerHTML = '<div class="btn-group"></div>';
+        const g = controls.querySelector('.btn-group');
+        opts.forEach(o => {
+            const b = document.createElement('button');
+            b.innerText = o.l;
+            b.onclick = () => { addMsg(o.l, "user"); cb(o.v); };
+            g.appendChild(b);
+        });
+    }
+
+    function generatePDF() {
         const doc = new jsPDF();
-        
-        // ※ 本来は日本語フォントの読み込みが必要ですが、プロトタイプとして構造を記述します
-        doc.setFontSize(20);
-        doc.text("Medical Interview Sheet (Raccoon Dental)", 20, 20);
-        
-        doc.setFontSize(12);
-        doc.text(`Name: ${userData.name}`, 20, 40);
-        doc.text(`Chief Complaint: ${userData.chiefComplaint}`, 20, 50);
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 60);
-        
-        doc.text("--------------------------------------------------", 20, 70);
-        doc.text("Next Step: Please present this PDF at the reception.", 20, 80);
-
-        doc.save(`Interview_${userData.name}.pdf`);
+        // 日本語対応にはフォント設定が必要ですが、構造のみ記述
+        doc.text("Medical Interview Sheet - Raccoon Dental", 20, 20);
+        doc.text(`Name: ${data.name}`, 20, 40);
+        doc.text(`Birth: ${data.birth}`, 20, 50);
+        doc.text(`Symptom: ${data.mainSymptom}`, 20, 60);
+        doc.text(`Details: ${data.details}`, 20, 70);
+        doc.text(`Medical History: ${data.medicalHistory}`, 20, 80);
+        doc.save("raccoon_monshin.pdf");
     }
+
+    start();
 </script>
 </body>
 </html>
