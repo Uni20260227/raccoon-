@@ -3,25 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ラクーンデンタル スマート問診</title>
+    <title>ラクーンデンタル スマート問診 v2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary-color: #4a90e2; --bg-color: #f7f9fc; }
-        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif; background-color: var(--bg-color); margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .message { max-width: 85%; padding: 14px 18px; border-radius: 20px; line-height: 1.6; font-size: 15px; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .bot { background-color: white; align-self: flex-start; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        body { font-family: "Helvetica Neue", Arial, sans-serif; background-color: var(--bg-color); margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .message { max-width: 85%; padding: 12px 16px; border-radius: 15px; line-height: 1.5; font-size: 14px; }
+        .bot { background-color: white; align-self: flex-start; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .user { background-color: var(--primary-color); align-self: flex-end; color: white; }
-        #input-area { background: white; padding: 20px; border-top: 1px solid #eee; }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; }
-        button { padding: 12px 20px; border: 1px solid var(--primary-color); border-radius: 25px; background: white; color: var(--primary-color); cursor: pointer; font-weight: bold; }
-        button:hover { background: var(--primary-color); color: white; }
+        #input-area { background: white; padding: 15px; border-top: 1px solid #eee; min-height: 80px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        button { padding: 10px 15px; border: 1px solid var(--primary-color); border-radius: 20px; background: white; color: var(--primary-color); cursor: pointer; font-size: 13px; }
+        button.selected { background: var(--primary-color); color: white; }
+        .submit-btn { background: #28a745; color: white; border: none; font-weight: bold; }
         
-        /* PDF出力用の隠しエリア */
-        #pdf-template { display: none; padding: 40px; background: white; color: black; }
-        .pdf-title { font-size: 24px; font-weight: bold; border-bottom: 2px solid black; margin-bottom: 20px; }
-        .pdf-item { margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        /* PDFレイアウト設定 */
+        #pdf-template { display: none; padding: 30px; background: white; color: black; width: 700px; }
+        .pdf-header { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .pdf-section { margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; }
+        .pdf-row { display: flex; border-bottom: 1px solid #eee; padding: 5px 0; }
+        .pdf-label { width: 120px; font-weight: bold; font-size: 12px; }
+        .pdf-val { flex: 1; font-size: 12px; }
+        .policy-box { font-size: 10px; color: #666; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px; }
     </style>
 </head>
 <body>
@@ -30,94 +34,144 @@
 <div id="input-area"></div>
 
 <div id="pdf-template">
-    <div class="pdf-title">ラクーンデンタル問診票</div>
-    <div id="pdf-content"></div>
-    <div style="margin-top: 40px; font-size: 12px;">
-        ※この問診票はチャットボットにより自動生成されました。
+    <div class="pdf-header">問診票【成人用】</div>
+    <div class="pdf-section">
+        <div class="pdf-row"><div class="pdf-label">お名前</div><div class="pdf-val" id="p-name"></div><div class="pdf-label">生年月日</div><div class="pdf-val" id="p-birth"></div></div>
+        <div class="pdf-row"><div class="pdf-label">住所</div><div class="pdf-val" id="p-address"></div></div>
+        <div class="pdf-row"><div class="pdf-label">連絡先</div><div class="pdf-val" id="p-contact"></div></div>
+    </div>
+    <div class="pdf-section">
+        <div class="pdf-row"><div class="pdf-label">選んだ理由</div><div class="pdf-val" id="p-reason"></div></div>
+        <div class="pdf-row"><div class="pdf-label">本日の症状</div><div class="pdf-val" id="p-symptoms"></div></div>
+        <div class="pdf-row"><div class="pdf-label">気になる部位</div><div class="pdf-val" id="p-parts"></div></div>
+        <div class="pdf-row"><div class="pdf-label">いつから？</div><div class="pdf-val" id="p-since"></div></div>
+    </div>
+    <div class="pdf-section">
+        <div class="pdf-row"><div class="pdf-label">既往歴</div><div class="pdf-val" id="p-history"></div></div>
+        <div class="pdf-row"><div class="pdf-label">服用中のお薬</div><div class="pdf-val" id="p-meds"></div></div>
+        <div class="pdf-row"><div class="pdf-label">生活習慣</div><div class="pdf-val" id="p-life"></div></div>
+    </div>
+    <div class="policy-box">
+        <b>キャンセルポリシー等への同意:</b> 済み<br>
+        前日・当日の急な変更にはキャンセル料が発生する場合がございます。[cite: 7, 8]
     </div>
 </div>
 
 <script>
     const chat = document.getElementById('chat-container');
     const controls = document.getElementById('input-area');
-    let data = { name: "", birth: "", symptom: "", history: "" };
+    
+    // データ格納用
+    let data = { 
+        name: "", birth: "", address: "", tel: "", reason: "", 
+        symptoms: [], parts: [], since: "", history: [], meds: "", life: "" 
+    };
 
     function addMsg(text, type) {
-        const d = document.createElement('div');
-        d.className = `message ${type}`;
-        d.innerHTML = text;
-        chat.appendChild(d);
-        chat.scrollTop = chat.scrollHeight;
+        const d = document.createElement('div'); d.className = `message ${type}`; d.innerHTML = text;
+        chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
     }
 
+    // --- シナリオ開始 ---
     function start() {
-        addMsg("ラクーンデンタルへようこそ。お名前を教えてください。", "bot");
-        renderInput("名前を入力...", (v) => { data.name = v; askSymptom(); });
+        addMsg("ラクーンデンタルへようこそ。問診票の作成をお手伝いします。最初にお名前（フルネーム）を教えてください。", "bot");
+        renderInput("名前を入力...", (v) => { data.name = v; askBirth(); });
     }
 
-    function askSymptom() {
-        addMsg(`${data.name}様ですね。本日の症状を選んでください。`, "bot");
+    function askBirth() {
+        addMsg(`${data.name}様ですね。生年月日を教えてください（例：1988年12月10日）。`, "bot");
+        renderInput("生年月日を入力...", (v) => { data.birth = v; askContact(); });
+    }
+
+    function askContact() {
+        addMsg("ご連絡先の電話番号と、お住まいの市区町村を教えてください。", "bot");
+        renderInput("電話番号・住所を入力...", (v) => { data.tel = v; data.address = v; askReason(); });
+    }
+
+    function askReason() {
+        addMsg("当院を選んだ理由を教えてください。[cite: 5]", "bot");
         renderButtons([
-            { l: "痛みがある", v: "痛み" },
-            { l: "詰め物が取れた", v: "脱離" },
-            { l: "クリーニング", v: "検診" }
-        ], (v) => { data.symptom = v; askHistory(); });
+            {l:"知人の紹介",v:"知人"}, {l:"近所（自宅・職場）",v:"近所"}, {l:"HPを見て",v:"HP"}, {l:"SNS（Instagram等）",v:"SNS"}
+        ], (v) => { data.reason = v; askSymptoms(); }, false);
     }
 
-    function askHistory() {
-        addMsg("現在、他科に通院中や服用中のお薬はありますか？", "bot");
-        renderInput("例：高血圧で通院中、なし等", (v) => { data.history = v; finalize(); });
+    // --- 複数選択：主訴 ---
+    function askSymptoms() {
+        addMsg("<b>本日の症状</b>を教えてください（複数選択可）。選び終わったら「決定」を押してください。", "bot");
+        renderMultiButtons([
+            "痛みがある", "腫れている", "詰め物が取れた", "歯ぐきが気になる", "歯の色が気になる", "いびき", "歯並び", "全部治したい"
+        ], (selected) => { data.symptoms = selected; askParts(); });
     }
 
-    function finalize() {
-        addMsg("ありがとうございます。最後に『PDFを作成』ボタンを押して、保存してください。", "bot");
-        renderButtons([{ l: "問診票PDFを作成", v: "pdf" }], generatePDF);
+    // --- 複数選択：部位 ---
+    function askParts() {
+        addMsg("<b>気になる部位</b>はどこですか？（複数選択可）", "bot");
+        renderMultiButtons([
+            "右上奥", "上前歯", "左上奥", "右下奥", "下前歯", "左下奥", "顎（あご）", "頬（ほお）", "舌"
+        ], (selected) => { data.parts = selected; askMedical(); });
     }
 
+    function askMedical() {
+        addMsg("現在・過去に治療した病気（心臓、血圧、糖尿病、骨粗鬆症、アレルギー等）や、服用中のお薬があれば教えてください。[cite: 5]", "bot");
+        renderInput("病名や薬名を入力...", (v) => { data.history = v; data.meds = v; askFinal(); });
+    }
+
+    function askFinal() {
+        addMsg("ありがとうございます。最後に、当院のキャンセルポリシー（前々日までの連絡等）に同意いただけますか？[cite: 7, 8]", "bot");
+        renderButtons([{l:"同意してPDFを作成",v:"ok"}], generatePDF, false);
+    }
+
+    // --- ユーティリティ ---
     function renderInput(ph, cb) {
-        controls.innerHTML = `<input type="text" id="i" placeholder="${ph}" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd;">`;
-        const i = document.getElementById('i');
+        controls.innerHTML = `<input type="text" id="idx" placeholder="${ph}" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">`;
+        const i = document.getElementById('idx');
         i.onkeypress = (e) => { if(e.key==='Enter'){ addMsg(i.value, "user"); cb(i.value); } };
     }
 
-    function renderButtons(opts, cb) {
+    function renderButtons(opts, cb, multi) {
         controls.innerHTML = '<div class="btn-group"></div>';
         const g = controls.querySelector('.btn-group');
         opts.forEach(o => {
-            const b = document.createElement('button');
-            b.innerText = o.l;
+            const b = document.createElement('button'); b.innerText = o.l;
             b.onclick = () => { addMsg(o.l, "user"); cb(o.v); };
             g.appendChild(b);
         });
     }
 
-    // PDF生成ロジック
-    function generatePDF() {
-        const content = document.getElementById('pdf-content');
-        const template = document.getElementById('pdf-template');
-        
-        // PDFの中身を組み立てる
-        content.innerHTML = `
-            <div class="pdf-item"><b>お名前：</b> ${data.name} 様</div>
-            <div class="pdf-item"><b>本日の主訴：</b> ${data.symptom}</div>
-            <div class="pdf-item"><b>病歴・お薬：</b> ${data.history}</div>
-            <div class="pdf-item"><b>作成日：</b> ${new Date().toLocaleDateString()}</div>
-        `;
-
-        // 隠しているテンプレートを一時的に表示してPDF化
-        template.style.display = 'block';
-        
-        const opt = {
-            margin: 1,
-            filename: `問診票_${data.name}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-
-        html2pdf().set(opt).from(template).save().then(() => {
-            template.style.display = 'none'; // 生成後にまた隠す
+    function renderMultiButtons(opts, cb) {
+        controls.innerHTML = '<div class="btn-group" id="multi-group"></div>';
+        const g = document.getElementById('multi-group');
+        let selected = [];
+        opts.forEach(opt => {
+            const b = document.createElement('button'); b.innerText = opt;
+            b.onclick = () => {
+                b.classList.toggle('selected');
+                if(b.classList.contains('selected')) selected.push(opt);
+                else selected = selected.filter(s => s !== opt);
+            };
+            g.appendChild(b);
         });
+        const sub = document.createElement('button'); sub.innerText = "決定"; sub.className = "submit-btn";
+        sub.onclick = () => { addMsg(selected.join(', '), "user"); cb(selected); };
+        g.appendChild(sub);
+    }
+
+    // --- PDF生成 ---
+    function generatePDF() {
+        const t = document.getElementById('pdf-template');
+        document.getElementById('p-name').innerText = data.name;
+        document.getElementById('p-birth').innerText = data.birth;
+        document.getElementById('p-address').innerText = data.address;
+        document.getElementById('p-contact').innerText = data.tel;
+        document.getElementById('p-reason').innerText = data.reason;
+        document.getElementById('p-symptoms').innerText = data.symptoms.join(' / ');
+        document.getElementById('p-parts').innerText = data.parts.join(' / ');
+        document.getElementById('p-history').innerText = data.history;
+        document.getElementById('p-meds').innerText = data.meds;
+
+        t.style.display = 'block';
+        const opt = { margin: 0.5, filename: `ラクーン問診_${data.name}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } };
+        html2pdf().set(opt).from(t).save().then(() => { t.style.display = 'none'; });
     }
 
     start();
