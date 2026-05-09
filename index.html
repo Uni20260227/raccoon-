@@ -31,7 +31,7 @@
 
 <script>
     // ▼ ここにGASのURLを貼り付けてください ▼
-    const gasUrl = 'https://script.google.com/macros/s/AKfycbwLa_07f0gplPhvDhf9GJznAMafuofjbcVv4W1Md_hic_j8uyLfOEWMLGPeT5ub-9Xi/exec';
+    const gasUrl = 'ここに発行したウェブアプリURLを貼り付け';
 
     const chat = document.getElementById('chat-container');
     const controls = document.getElementById('input-area');
@@ -49,18 +49,12 @@
 
     function askName() { msg("お名前とふりがなを教えてください。", "bot"); input("漢字：新井 敬 / ふりがな：あらい たかし", (v) => { data.name = v.split('/')[0]||v; data.furigana = v.split('/')[1]||""; askBirth(); }); }
     function askBirth() { msg("生年月日を教えてください。", "bot"); input("例：1988年12月10日", (v) => { data.birth = v; askAddress(); }); }
-    
-    // ▼ 住所・電話・メールを分割しました ▼
     function askAddress() { msg("ご住所（都道府県・市区町村から）を教えてください。", "bot"); input("例：山形県〇〇市〇〇町1-2-3", (v) => { data.address = v; askTel(); }); }
     function askTel() { msg("ご連絡先の電話番号を教えてください。", "bot"); input("例：090-0000-0000", (v) => { data.tel = v; askEmail(); }); }
     function askEmail() { msg("メールアドレスを教えてください。（無い場合は「なし」で構いません）", "bot"); input("例：test@example.com", (v) => { data.email = v; if(data.type==="adult"){ askJob(); } else { askReason(); } }); }
-    
     function askJob() { msg("ご職業を教えてください。", "bot"); input("会社員、主婦、学生など", (v) => { data.job = v; askReason(); }); }
     
-    function askReason() { 
-        msg("当院を選んだ理由を教えてください。", "bot"); 
-        btns([{l:"知人紹介",v:"紹介"},{l:"近所",v:"近所"},{l:"ホームページ",v:"HP"},{l:"SNS・その他",v:"SNS等"}], (v) => { data.reason = v; askSymptoms(); }); 
-    }
+    function askReason() { msg("当院を選んだ理由を教えてください。", "bot"); btns([{l:"知人紹介",v:"紹介"},{l:"近所",v:"近所"},{l:"ホームページ",v:"HP"},{l:"SNS・その他",v:"SNS等"}], (v) => { data.reason = v; askSymptoms(); }); }
 
     function askSymptoms() {
         msg("<b>本日の症状</b>を選択してください（複数可）。", "bot");
@@ -77,34 +71,42 @@
     function askSince() { msg("いつからですか？", "bot"); btns([{l:"今回初めて",v:"初回"},{l:"何度かある",v:"再発"},{l:"数日前から",v:"数日前"},{l:"ずっと前",v:"以前から"}], (v) => { data.since = v; askHistory(); }); }
     
     function askHistory() {
-        msg("現在・過去の病気を選択してください（複数可）。", "bot");
-        const os = ["心臓病", "高血圧", "脳血管障害", "腎臓病", "糖尿病", "骨粗鬆症", "肝臓病", "アレルギー", "特になし"];
-        multiBtns(os, (res) => { data.history = res; askMeds(); });
+        msg("現在・過去の病気を選択してください（複数可）。<br>※該当するものが無い場合は「その他」を選んでください。", "bot");
+        const os = ["心臓病", "高血圧", "脳血管障害", "腎臓病", "糖尿病", "骨粗鬆症", "肝臓病", "アレルギー", "特になし", "その他"];
+        multiBtns(os, (res) => { 
+            data.history = res; 
+            // 「その他」が含まれているかチェック
+            if(res.includes("その他")) {
+                askHistoryDetail();
+            } else {
+                askMeds();
+            }
+        });
+    }
+
+    // ▼「その他」を選んだ時の自由入力処理 ▼
+    function askHistoryDetail() {
+        msg("「その他」の病名や詳細を自由にご記入ください。", "bot");
+        input("病名など", (v) => {
+            // "その他"という文字を、入力された内容に置き換える
+            const idx = data.history.indexOf("その他");
+            if(idx !== -1) data.history[idx] = `その他(${v})`;
+            askMeds();
+        });
     }
 
     function askMeds() { msg("現在飲まれているお薬（お薬手帳の有無）を教えてください。", "bot"); input("薬名、または「手帳あり」", (v) => { data.meds = v; askLife(); }); }
-    
     function askLife() { msg("1日の歯ブラシのタイミングや、フロス等の使用を教えてください。", "bot"); input("例：朝・夜、フロス使用", (v) => { data.brushing = v; askDentalExp(); }); }
-
     function askDentalExp() { msg("麻酔・抜歯で気分が悪くなったことや、型取りで吐き気が出やすいことはありますか？", "bot"); input("有・無、または詳細", (v) => { data.dentalExp = v; if(data.type==="child"){ askChild(); } else { askRequests(); } }); }
-
-    function askChild() { msg("【小児用】歯科への苦手意識、泣いた時の対応希望（少し待つ、別日にするなど）、家族構成を教えてください。", "bot"); input("音を嫌がる、泣いたら別日など", (v) => { data.childInfo = v; askRequests(); }); }
-
+    function askChild() { msg("【小児用】歯科への苦手意識、泣いた時の対応希望（少し待つ、別日になど）、家族構成を教えてください。", "bot"); input("音を嫌がる、泣いたら別日など", (v) => { data.childInfo = v; askRequests(); }); }
     function askRequests() { msg("最後にご要望や気になる点がありましたらご記入ください。", "bot"); input("特になし、痛みに弱いなど", (v) => { data.requests = v; showSummary(); }); }
 
     function showSummary() {
         msg("入力内容の確認です。内容を直したい場合は、各項目の<b>『修正する』</b>をタップしてください。", "bot");
         let h = '<table class="summary-table">';
-        
-        // ▼ 確認画面にも細かく反映 ▼
         const its = [
-            {k:"名前",v:data.name,f:askName},
-            {k:"住所",v:data.address,f:askAddress},
-            {k:"電話",v:data.tel,f:askTel},
-            {k:"メール",v:data.email,f:askEmail},
-            {k:"症状",v:data.symptoms.join(' / '),f:askSymptoms},
-            {k:"部位",v:data.parts.join(' / '),f:askParts},
-            {k:"病歴",v:data.history.join(' / '),f:askHistory}
+            {k:"名前",v:data.name,f:askName},{k:"住所",v:data.address,f:askAddress},{k:"電話",v:data.tel,f:askTel},{k:"メール",v:data.email,f:askEmail},
+            {k:"症状",v:data.symptoms.join(' / '),f:askSymptoms},{k:"部位",v:data.parts.join(' / '),f:askParts},{k:"病歴",v:data.history.join(' / '),f:askHistory}
         ];
         its.forEach((it, i) => { h += `<tr><th>${it.k}</th><td>${it.v}<span class="edit-link" onclick="edit(${i})">修正する</span></td></tr>`; });
         h += '</table>'; msg(h, "bot");
@@ -113,10 +115,10 @@
     }
 
     function showPolicy() {
-        let pText = "<b>【女性の方へ】</b><br>妊娠中・授乳中など体調が悪い時は無理せず、また、何かありましたら女性スタッフにお声掛けください。<br><br>";
-        pText += "<b>【キャンセルポリシー】</b><br>ご予約の変更は予約の前々日までにお電話かwebでのご予約の変更をお願いします。各患者さんに合わせた時間・スタッフ等を準備させていただき来院をお待ちしているからです。前日、当日の急なご予約の変更があった場合は保険診療3300円、自費診療で5500円が次回の診療でいただく場合がございます。<br><br>";
-        pText += "<b>【治療算定において】</b><br>保険診療において治療回数および期間が定められております。そのため、入れ歯の調整など月に２回以降に関しては30分あたり2200円〜3300円費用がかかります。<br><br>";
-        pText += "<b>【治療におけるリスク・偶発症について】</b><br>治療には最善を尽くすようにさせていただいておりますが、症状や各患者さんの生活背景により、望まない結果になる場合もございます（例：虫歯の治療の過程でやむを得ず抜歯になる、抜歯等の外科処置のときに偶発症が生じる可能性があるなど）。何卒ご理解とご了承をお願いいたします。";
+        let pText = "<b>【女性の方へ】</b><br>妊娠中・授乳中など体調が悪い時は無理せずお声掛けください。<br><br>";
+        pText += "<b>【キャンセルポリシー】</b><br>ご予約の変更は前々日までにお願いします。前日・当日の急なご予約の変更があった場合は保険診療3300円、自費診療で5500円が次回の診療でいただく場合がございます。<br><br>";
+        pText += "<b>【治療算定において】</b><br>入れ歯の調整など月に２回以降に関しては30分あたり2200円〜3300円費用がかかります。<br><br>";
+        pText += "<b>【治療におけるリスク・偶発症について】</b><br>治療には最善を尽くすようにさせていただいておりますが、症状や生活背景により、望まない結果になる場合もございます（例：虫歯の治療の過程でやむを得ず抜歯になる、抜歯等の外科処置のときに偶発症が生じる可能性があるなど）。何卒ご理解とご了承をお願いいたします。";
         
         msg("最後に以下の「診療前に」をご確認ください。スクロールして最後までお読みいただき、同意される場合はボタンを押して送信してください。", "bot");
         msg(`<div class="policy-box">${pText}</div>`, "bot");
