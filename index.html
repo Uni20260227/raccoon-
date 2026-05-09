@@ -16,17 +16,13 @@
         .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
         button { padding: 10px 15px; border: 1px solid var(--primary-color); border-radius: 20px; background: white; color: var(--primary-color); cursor: pointer; font-size: 13px; }
         button.selected { background: var(--primary-color); color: white; }
-        .submit-btn { background: #28a745; color: white; border: none; font-weight: bold; width: 100%; margin-top: 10px; }
-        input[type="text"], input[type="tel"], input[type="email"] { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 8px; box-sizing: border-box; }
-        
-        /* PDFレイアウト */
-        #pdf-template { display: none; padding: 20px; background: white; width: 800px; color: black; font-size: 11px; }
-        .p-head { text-align: center; font-size: 18px; font-weight: bold; border-bottom: 2px solid #000; margin-bottom: 10px; }
+        .submit-btn { background: #28a745; color: white; border: none; font-weight: bold; width: 100%; margin-top: 10px; padding: 12px; border-radius: 10px; }
+        input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 8px; box-sizing: border-box; font-size: 16px; }
+        #pdf-template { display: none; padding: 20px; background: white; width: 700px; color: black; }
         .p-sec { border: 1px solid #000; margin-bottom: 8px; padding: 5px; }
-        .p-row { display: flex; border-bottom: 1px solid #eee; }
-        .p-lbl { width: 100px; background: #f2f2f2; font-weight: bold; padding: 3px; border-right: 1px solid #ccc; }
-        .p-val { flex: 1; padding: 3px; }
-        .p-policy { font-size: 9px; line-height: 1.2; margin-top: 10px; border-top: 1px dashed #000; }
+        .p-row { display: flex; border-bottom: 1px solid #eee; padding: 3px 0; }
+        .p-lbl { width: 100px; background: #f2f2f2; font-weight: bold; padding: 3px; font-size: 11px; }
+        .p-val { flex: 1; padding: 3px; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -35,27 +31,26 @@
 <div id="input-area"></div>
 
 <div id="pdf-template">
-    <div class="p-head" id="p-title">問診票</div>
+    <div style="text-align:center; font-size:20px; font-weight:bold; border-bottom:2px solid #000; margin-bottom:10px;" id="p-title">問診票</div>
     <div class="p-sec">
         <div class="p-row"><div class="p-lbl">お名前</div><div class="p-val" id="v-name"></div><div class="p-lbl">生年月日</div><div class="p-val" id="v-birth"></div></div>
-        <div class="p-row"><div class="p-lbl">住所</div><div class="p-val" id="v-address"></div></div>
-        <div class="p-row"><div class="p-lbl">連絡先</div><div class="p-val" id="v-contact"></div><div class="p-lbl">職業</div><div class="p-val" id="v-job"></div></div>
+        <div class="p-row"><div class="p-lbl">住所/職業</div><div class="p-val" id="v-address"></div></div>
+        <div class="p-row"><div class="p-lbl">連絡先</div><div class="p-val" id="v-contact"></div></div>
     </div>
     <div class="p-sec">
         <div class="p-row"><div class="p-lbl">選んだ理由</div><div class="p-val" id="v-reason"></div></div>
         <div class="p-row"><div class="p-lbl">本日の症状</div><div class="p-val" id="v-symptoms"></div></div>
-        <div class="p-row"><div class="p-lbl">部位</div><div class="p-val" id="v-parts"></div><div class="p-lbl">時期</div><div class="p-val" id="v-since"></div></div>
+        <div class="p-row"><div class="p-lbl">部位</div><div class="p-val" id="v-parts"></div><div class="p-lbl">いつから</div><div class="p-val" id="v-since"></div></div>
     </div>
     <div class="p-sec">
-        <div class="p-row"><div class="p-lbl">既往歴</div><div class="p-val" id="v-history"></div></div>
-        <div class="p-row"><div class="p-lbl">お薬</div><div class="p-val" id="v-meds"></div></div>
-        <div class="p-row"><div class="p-lbl">生活習慣</div><div class="p-val" id="v-life"></div><div class="p-lbl">歯科経験</div><div class="p-val" id="v-dental-exp"></div></div>
+        <div class="p-row"><div class="p-lbl">既往歴/お薬</div><div class="p-val" id="v-history"></div></div>
+        <div class="p-row"><div class="p-lbl">生活習慣</div><div class="p-val" id="v-life"></div></div>
     </div>
     <div id="v-child-sec" style="display:none;" class="p-sec">
         <div class="p-row"><div class="p-lbl">小児追加情報</div><div class="p-val" id="v-child-info"></div></div>
     </div>
-    <div class="p-policy">
-        【同意事項】キャンセルポリシー及び治療算定に関する規定に同意します。 作成日：<span id="v-date"></span>
+    <div style="font-size:10px; margin-top:10px;">
+        【同意】キャンセルポリシー及び治療規定に同意済み。 作成日：<span id="v-date"></span>
     </div>
 </div>
 
@@ -63,86 +58,67 @@
     const chat = document.getElementById('chat-container');
     const controls = document.getElementById('input-area');
     let isChild = false;
-    let data = { symptoms: [], parts: [], history: [], life: [], dentalExp: [] };
+    let data = { symptoms: [], parts: [] };
 
     function msg(t, s) {
         const d = document.createElement('div'); d.className = `message ${s}`; d.innerHTML = t;
         chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
     }
 
-    // シナリオ開始 [cite: 1, 10]
     function start() {
-        msg("ラクーンデンタルへようこそ。問診を開始します。どちらの問診票を作成しますか？", "bot");
+        msg("ラクーンデンタルへようこそ。どちらの問診票を作成しますか？", "bot");
         btns([{l:"成人用",v:"adult"}, {l:"小児用",v:"child"}], (v) => {
             isChild = (v === "child");
-            msg(isChild ? "お子様の問診を開始します。" : "成人の問診を開始します。", "bot");
-            askBasic();
+            askName();
         });
     }
 
-    function askBasic() {
+    function askName() {
         msg("お名前（ふりがな）を教えてください。", "bot");
-        input("例：新井 敬（あらい たかし）", (v) => { data.name = v; msg("次に生年月日をお願いします。", "bot");
-            input("例：1988年12月10日", (v) => { data.birth = v; msg("ご住所とご職業を教えてください。", "bot");
-                input("住所・職業を入力", (v) => { data.job = v; data.address = v; msg("電話番号とメールをお願いします。", "bot");
-                    input("090-0000-0000 / test@example.com", (v) => { data.contact = v; askReason(); });
-                });
-            });
-        });
+        input("例：新井 敬（あらい たかし）", (v) => { data.name = v; askBirth(); });
     }
 
-    function askReason() { [cite: 5, 15]
+    function askBirth() {
+        msg("生年月日を教えてください（例：1988/12/10）。", "bot");
+        input("生年月日を入力", (v) => { data.birth = v; askInfo(); });
+    }
+
+    function askInfo() {
+        msg("住所・職業・連絡先を教えてください。", "bot");
+        input("住所・職業・電話番号を入力", (v) => { data.contact = v; askReason(); });
+    }
+
+    function askReason() {
         msg("当院を選んだ理由を教えてください。", "bot");
-        btns([{l:"知人紹介",v:"紹介"},{l:"近所",v:"近所"},{l:"HP",v:"HP"},{l:"SNS",v:"SNS"}], (v) => { data.reason = v; askSymptoms(); });
+        btns([{l:"紹介",v:"紹介"},{l:"近所",v:"近所"},{l:"HP",v:"HP"},{l:"SNS",v:"SNS"}], (v) => { data.reason = v; askSymptoms(); });
     }
 
-    function askSymptoms() { [cite: 5, 15]
+    function askSymptoms() {
         msg("<b>本日の症状</b>を選択してください（複数可）。", "bot");
-        const opts = ["痛みがある", "腫れている", "取れた（物あり）", "取れた（物なし）", "歯周病・歯石", "歯の色", "いびき", "歯並び", "全部治したい"];
+        const opts = ["痛み", "腫れ", "詰め物が取れた", "歯周病", "歯の色", "いびき", "歯並び", "全部治したい"];
         multiBtns(opts, (res) => { data.symptoms = res; askParts(); });
     }
 
-    function askParts() { [cite: 5, 15]
+    function askParts() {
         msg("<b>気になる部位</b>を選択してください（複数可）。", "bot");
         const opts = ["右上奥", "上前歯", "左上奥", "右下奥", "下前歯", "左下奥", "顎", "頬", "舌"];
-        multiBtns(opts, (res) => { data.parts = res; askSince(); });
+        multiBtns(opts, (res) => { data.parts = res; askHistory(); });
     }
 
-    function askSince() { [cite: 5, 15]
-        msg("その症状はいつからですか？", "bot");
-        btns([{l:"初めて",v:"初回"},{l:"何度かある",v:"再発"},{l:"数日前から",v:"数日前"},{l:"ずっと前",v:"以前から"}], (v) => { data.since = v; askHistory(); });
+    function askHistory() {
+        msg("現在・過去の病気や飲んでいるお薬を教えてください。", "bot");
+        input("心臓、血圧、糖尿病、アレルギーなど", (v) => { data.history = v; finalize(); });
     }
 
-    function askHistory() { [cite: 5, 15]
-        msg("現在・過去の病気やアレルギー、飲んでいるお薬を教えてください。", "bot");
-        input("心臓、血圧、糖尿病、薬名など", (v) => { data.history = v; askLife(); });
-    }
-
-    function askLife() { [cite: 5, 15]
-        msg("歯ブラシのタイミングや、タバコ・お酒について教えてください。", "bot");
-        input("例：朝晩、タバコなし、酒時々", (v) => { data.life = v; askDental(); });
-    }
-
-    function askDental() { [cite: 5, 15]
-        msg("麻酔や抜歯で気分が悪くなったことや、型取りで吐き気が出やすいことはありますか？", "bot");
-        input("特になし、型取りが苦手など", (v) => { data.dentalExp = v; if(isChild) askChild(); else finalize(); });
-    }
-
-    function askChild() { [cite: 15]
-        msg("お子様について教えてください（出生体重、歯科への苦手意識、泣いた時の対応など）。", "bot");
-        input("3000g、音を怖がる、少し待てば大丈夫など", (v) => { data.childInfo = v; finalize(); });
-    }
-
-    function finalize() { [cite: 7, 8]
-        msg("ありがとうございます。最後に、キャンセルポリシーと治療費規定に同意いただけますか？<br>（当日変更は保険3300円/自費5500円の可能性あり）", "bot");
+    function finalize() {
+        msg("ありがとうございます。最後にポリシーに同意してPDFを作成してください。", "bot");
         btns([{l:"同意してPDF作成",v:"ok"}], generatePDF);
     }
 
-    // --- UI Helpers ---
     function input(ph, cb) {
         controls.innerHTML = `<input type="text" id="t-in" placeholder="${ph}">`;
         const i = document.getElementById('t-in');
-        i.onkeypress = (e) => { if(e.key==='Enter'){ msg(i.value, "user"); cb(i.value); } };
+        i.onkeypress = (e) => { if(e.key==='Enter' && i.value){ msg(i.value, "user"); cb(i.value); } };
     }
     function btns(os, cb) {
         controls.innerHTML = '<div class="btn-group"></div>';
@@ -161,33 +137,25 @@
             document.getElementById('m-g').appendChild(b);
         });
         const s = document.createElement('button'); s.innerText = "決定"; s.className = "submit-btn";
-        s.onclick = () => { msg(sel.join(', '), "user"); cb(sel); };
+        s.onclick = () => { if(sel.length>0){ msg(sel.join(', '), "user"); cb(sel); } };
         controls.appendChild(s);
     }
 
-    function generatePDF() { [cite: 19-24]
+    function generatePDF() {
         const t = document.getElementById('pdf-template');
         document.getElementById('p-title').innerText = isChild ? "問診票【小児用】" : "問診票【成人用】";
         document.getElementById('v-name').innerText = data.name;
         document.getElementById('v-birth').innerText = data.birth;
-        document.getElementById('v-address').innerText = data.address;
-        document.getElementById('v-job').innerText = data.job || "未回答";
+        document.getElementById('v-address').innerText = data.contact;
         document.getElementById('v-contact').innerText = data.contact;
         document.getElementById('v-reason').innerText = data.reason;
         document.getElementById('v-symptoms').innerText = data.symptoms.join(', ');
         document.getElementById('v-parts').innerText = data.parts.join(', ');
-        document.getElementById('v-since').innerText = data.since;
         document.getElementById('v-history').innerText = data.history;
-        document.getElementById('v-meds').innerText = "お薬手帳持参予定";
-        document.getElementById('v-life').innerText = data.life;
-        document.getElementById('v-dental-exp').innerText = data.dentalExp;
         document.getElementById('v-date').innerText = new Date().toLocaleDateString();
-        if(isChild) {
-            document.getElementById('v-child-sec').style.display = "block";
-            document.getElementById('v-child-info').innerText = data.childInfo;
-        }
+        
         t.style.display = 'block';
-        html2pdf().from(t).set({margin:0.3, filename:`ラクーン問診_${data.name}.pdf`, jsPDF:{unit:'in', format:'a4'}}).save().then(()=>t.style.display='none');
+        html2pdf().from(t).set({margin:0.5, filename:`問診票_${data.name}.pdf`, jsPDF:{unit:'in', format:'a4'}}).save().then(()=>t.style.display='none');
     }
     start();
 </script>
