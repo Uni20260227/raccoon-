@@ -3,26 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ラクーンデンタル 統合問診システム</title>
+    <title>ラクーンデンタル スマート問診 v3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary-color: #4a90e2; --bg-color: #f7f9fc; }
-        body { font-family: "Helvetica Neue", Arial, sans-serif; background-color: var(--bg-color); margin: 0; display: flex; flex-direction: column; height: 100vh; color: #333; }
+        body { font-family: sans-serif; background-color: var(--bg-color); margin: 0; display: flex; flex-direction: column; height: 100vh; }
         #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .message { max-width: 85%; padding: 12px 16px; border-radius: 15px; line-height: 1.5; font-size: 14px; }
+        .message { max-width: 85%; padding: 12px 16px; border-radius: 15px; font-size: 14px; line-height: 1.5; }
         .bot { background-color: white; align-self: flex-start; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .user { background-color: var(--primary-color); align-self: flex-end; color: white; }
-        #input-area { background: white; padding: 15px; border-top: 1px solid #eee; min-height: 100px; }
+        #input-area { background: white; padding: 15px; border-top: 1px solid #eee; }
         .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
         button { padding: 10px 15px; border: 1px solid var(--primary-color); border-radius: 20px; background: white; color: var(--primary-color); cursor: pointer; font-size: 13px; }
         button.selected { background: var(--primary-color); color: white; }
         .submit-btn { background: #28a745; color: white; border: none; font-weight: bold; width: 100%; margin-top: 10px; padding: 12px; border-radius: 10px; }
-        input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 8px; box-sizing: border-box; font-size: 16px; }
-        #pdf-template { display: none; padding: 20px; background: white; width: 700px; color: black; }
-        .p-sec { border: 1px solid #000; margin-bottom: 8px; padding: 5px; }
-        .p-row { display: flex; border-bottom: 1px solid #eee; padding: 3px 0; }
-        .p-lbl { width: 100px; background: #f2f2f2; font-weight: bold; padding: 3px; font-size: 11px; }
-        .p-val { flex: 1; padding: 3px; font-size: 11px; }
+        input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        
+        /* 確認画面用スタイル */
+        .summary-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; margin: 10px 0; font-size: 13px; }
+        .summary-table th, .summary-table td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        .summary-table th { background: #f9f9f9; width: 30%; }
+        .edit-link { color: #e67e22; cursor: pointer; font-weight: bold; margin-left: 10px; text-decoration: underline; }
+
+        /* ポリシー表示スタイル */
+        .policy-content { font-size: 11px; color: #555; background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; margin: 10px 0; }
+        
+        /* PDF用 */
+        #pdf-template { display: none; padding: 30px; background: white; width: 750px; color: black; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -31,26 +38,10 @@
 <div id="input-area"></div>
 
 <div id="pdf-template">
-    <div style="text-align:center; font-size:20px; font-weight:bold; border-bottom:2px solid #000; margin-bottom:10px;" id="p-title">問診票</div>
-    <div class="p-sec">
-        <div class="p-row"><div class="p-lbl">お名前</div><div class="p-val" id="v-name"></div><div class="p-lbl">生年月日</div><div class="p-val" id="v-birth"></div></div>
-        <div class="p-row"><div class="p-lbl">住所/職業</div><div class="p-val" id="v-address"></div></div>
-        <div class="p-row"><div class="p-lbl">連絡先</div><div class="p-val" id="v-contact"></div></div>
-    </div>
-    <div class="p-sec">
-        <div class="p-row"><div class="p-lbl">選んだ理由</div><div class="p-val" id="v-reason"></div></div>
-        <div class="p-row"><div class="p-lbl">本日の症状</div><div class="p-val" id="v-symptoms"></div></div>
-        <div class="p-row"><div class="p-lbl">部位</div><div class="p-val" id="v-parts"></div><div class="p-lbl">いつから</div><div class="p-val" id="v-since"></div></div>
-    </div>
-    <div class="p-sec">
-        <div class="p-row"><div class="p-lbl">既往歴/お薬</div><div class="p-val" id="v-history"></div></div>
-        <div class="p-row"><div class="p-lbl">生活習慣</div><div class="p-val" id="v-life"></div></div>
-    </div>
-    <div id="v-child-sec" style="display:none;" class="p-sec">
-        <div class="p-row"><div class="p-lbl">小児追加情報</div><div class="p-val" id="v-child-info"></div></div>
-    </div>
-    <div style="font-size:10px; margin-top:10px;">
-        【同意】キャンセルポリシー及び治療規定に同意済み。 作成日：<span id="v-date"></span>
+    <div style="text-align:center; font-size:22px; font-weight:bold; border-bottom:2px solid #000; margin-bottom:15px;" id="p-title">問診票</div>
+    <div id="p-body"></div>
+    <div style="font-size:10px; margin-top:20px; border-top:1px dashed #333; padding-top:10px;">
+        ※本内容はデジタル問診により患者本人が入力・同意したものです。
     </div>
 </div>
 
@@ -58,19 +49,17 @@
     const chat = document.getElementById('chat-container');
     const controls = document.getElementById('input-area');
     let isChild = false;
-    let data = { symptoms: [], parts: [] };
+    let data = { name: "", birth: "", address: "", reason: "", symptoms: [], parts: [], history: "" };
 
     function msg(t, s) {
         const d = document.createElement('div'); d.className = `message ${s}`; d.innerHTML = t;
         chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
     }
 
+    // --- シナリオ ---
     function start() {
-        msg("ラクーンデンタルへようこそ。どちらの問診票を作成しますか？", "bot");
-        btns([{l:"成人用",v:"adult"}, {l:"小児用",v:"child"}], (v) => {
-            isChild = (v === "child");
-            askName();
-        });
+        msg("ラクーンデンタルへようこそ。問診を開始します。", "bot");
+        btns([{l:"成人用",v:"adult"}, {l:"小児用",v:"child"}], (v) => { isChild = (v === "child"); askName(); });
     }
 
     function askName() {
@@ -79,13 +68,8 @@
     }
 
     function askBirth() {
-        msg("生年月日を教えてください（例：1988/12/10）。", "bot");
-        input("生年月日を入力", (v) => { data.birth = v; askInfo(); });
-    }
-
-    function askInfo() {
-        msg("住所・職業・連絡先を教えてください。", "bot");
-        input("住所・職業・電話番号を入力", (v) => { data.contact = v; askReason(); });
+        msg("生年月日をお願いします。", "bot");
+        input("例：1988/12/10", (v) => { data.birth = v; askReason(); });
     }
 
     function askReason() {
@@ -94,27 +78,66 @@
     }
 
     function askSymptoms() {
-        msg("<b>本日の症状</b>を選択してください（複数可）。", "bot");
-        const opts = ["痛み", "腫れ", "詰め物が取れた", "歯周病", "歯の色", "いびき", "歯並び", "全部治したい"];
+        msg("本日の症状を選択してください（複数可）。", "bot");
+        const opts = ["痛み", "腫れ", "取れた", "歯周病", "歯の色", "いびき", "歯並び", "全部治したい"];
         multiBtns(opts, (res) => { data.symptoms = res; askParts(); });
     }
 
     function askParts() {
-        msg("<b>気になる部位</b>を選択してください（複数可）。", "bot");
+        msg("気になる部位を選択してください（複数可）。", "bot");
         const opts = ["右上奥", "上前歯", "左上奥", "右下奥", "下前歯", "左下奥", "顎", "頬", "舌"];
         multiBtns(opts, (res) => { data.parts = res; askHistory(); });
     }
 
     function askHistory() {
         msg("現在・過去の病気や飲んでいるお薬を教えてください。", "bot");
-        input("心臓、血圧、糖尿病、アレルギーなど", (v) => { data.history = v; finalize(); });
+        input("病気やアレルギー、薬名など", (v) => { data.history = v; showSummary(); });
     }
 
-    function finalize() {
-        msg("ありがとうございます。最後にポリシーに同意してPDFを作成してください。", "bot");
-        btns([{l:"同意してPDF作成",v:"ok"}], generatePDF);
+    // --- 確認・修正機能 ---
+    function showSummary() {
+        msg("これまでの入力内容を確認してください。修正したい場合は『修正』を押してください。", "bot");
+        let html = '<table class="summary-table">';
+        const items = [
+            { k: "名前", v: data.name, f: askName },
+            { k: "生年月日", v: data.birth, f: askBirth },
+            { k: "理由", v: data.reason, f: askReason },
+            { k: "症状", v: data.symptoms.join(', '), f: askSymptoms },
+            { k: "部位", v: data.parts.join(', '), f: askParts },
+            { k: "病歴", v: data.history, f: askHistory }
+        ];
+        items.forEach((item, i) => {
+            html += `<tr><th>${item.k}</th><td>${item.v} <span class="edit-link" onclick="editStep(${i})">修正</span></td></tr>`;
+        });
+        html += '</table>';
+        msg(html, "bot");
+        btns([{l:"内容に間違いありません", v:"confirm"}], showPolicy);
     }
 
+    window.editStep = (index) => {
+        const steps = [askName, askBirth, askReason, askSymptoms, askParts, askHistory];
+        msg("修正箇所に戻ります。", "bot");
+        steps[index]();
+    };
+
+    // --- ポリシー表示 --- 
+    function showPolicy() {
+        const policyHtml = `
+            <div class="policy-content">
+                <b>【キャンセルポリシー】</b><br>
+                ご予約の変更は、予約の前々日までにお電話かWEBにてお願いします。前日・当日の急な変更は、保険診療3300円、自費診療5500円が次回の診療で発生する場合がございます。<br><br>
+                <b>【治療算定・費用について】</b><br>
+                保険診療の規定により、入れ歯の調整など月に2回目以降に関しては、別途費用がかかります。<br><br>
+                <b>【個人情報等の取り扱い】</b><br>
+                ご記入いただいた内容は、診療の目的以外には使用いたしません。
+            </div>
+        `;
+        msg("最後に、当院のポリシーをご確認ください。", "bot");
+        msg(policyHtml, "bot");
+        btns([{l:"同意してPDFを保存", v:"ok"}], generatePDF);
+    }
+
+    // --- UI Helpers ---
     function input(ph, cb) {
         controls.innerHTML = `<input type="text" id="t-in" placeholder="${ph}">`;
         const i = document.getElementById('t-in');
@@ -143,20 +166,24 @@
 
     function generatePDF() {
         const t = document.getElementById('pdf-template');
+        const b = document.getElementById('p-body');
         document.getElementById('p-title').innerText = isChild ? "問診票【小児用】" : "問診票【成人用】";
-        document.getElementById('v-name').innerText = data.name;
-        document.getElementById('v-birth').innerText = data.birth;
-        document.getElementById('v-address').innerText = data.contact;
-        document.getElementById('v-contact').innerText = data.contact;
-        document.getElementById('v-reason').innerText = data.reason;
-        document.getElementById('v-symptoms').innerText = data.symptoms.join(', ');
-        document.getElementById('v-parts').innerText = data.parts.join(', ');
-        document.getElementById('v-history').innerText = data.history;
-        document.getElementById('v-date').innerText = new Date().toLocaleDateString();
+        
+        b.innerHTML = `
+            <p><b>お名前:</b> ${data.name}</p>
+            <p><b>生年月日:</b> ${data.birth}</p>
+            <p><b>選んだ理由:</b> ${data.reason}</p>
+            <p><b>本日の症状:</b> ${data.symptoms.join(', ')}</p>
+            <p><b>部位:</b> ${data.parts.join(', ')}</p>
+            <p><b>既往歴・お薬:</b> ${data.history}</p>
+            <p><b>同意日:</b> ${new Date().toLocaleDateString()}</p>
+            <p style="font-size:10px; color:gray;">キャンセルポリシーに同意済み</p>
+        `;
         
         t.style.display = 'block';
-        html2pdf().from(t).set({margin:0.5, filename:`問診票_${data.name}.pdf`, jsPDF:{unit:'in', format:'a4'}}).save().then(()=>t.style.display='none');
+        html2pdf().from(t).set({margin:0.5, filename:`問診票_${data.name}.pdf`}).save().then(()=>t.style.display='none');
     }
+
     start();
 </script>
 </body>
