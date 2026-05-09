@@ -48,8 +48,13 @@
     }
 
     function askName() { msg("お名前とふりがなを教えてください。", "bot"); input("漢字：新井 敬 / ふりがな：あらい たかし", (v) => { data.name = v.split('/')[0]||v; data.furigana = v.split('/')[1]||""; askBirth(); }); }
-    function askBirth() { msg("生年月日を教えてください。", "bot"); input("例：1988年12月10日", (v) => { data.birth = v; askContact(); }); }
-    function askContact() { msg("ご住所、電話番号、メールアドレスを教えてください。", "bot"); input("住所・電話・メール", (v) => { data.address = v; data.tel = v; data.email = v; if(data.type==="adult"){ askJob(); } else { askReason(); } }); }
+    function askBirth() { msg("生年月日を教えてください。", "bot"); input("例：1988年12月10日", (v) => { data.birth = v; askAddress(); }); }
+    
+    // ▼ 住所・電話・メールを分割しました ▼
+    function askAddress() { msg("ご住所（都道府県・市区町村から）を教えてください。", "bot"); input("例：山形県〇〇市〇〇町1-2-3", (v) => { data.address = v; askTel(); }); }
+    function askTel() { msg("ご連絡先の電話番号を教えてください。", "bot"); input("例：090-0000-0000", (v) => { data.tel = v; askEmail(); }); }
+    function askEmail() { msg("メールアドレスを教えてください。（無い場合は「なし」で構いません）", "bot"); input("例：test@example.com", (v) => { data.email = v; if(data.type==="adult"){ askJob(); } else { askReason(); } }); }
+    
     function askJob() { msg("ご職業を教えてください。", "bot"); input("会社員、主婦、学生など", (v) => { data.job = v; askReason(); }); }
     
     function askReason() { 
@@ -88,9 +93,19 @@
     function askRequests() { msg("最後にご要望や気になる点がありましたらご記入ください。", "bot"); input("特になし、痛みに弱いなど", (v) => { data.requests = v; showSummary(); }); }
 
     function showSummary() {
-        msg("入力内容の確認です。内容を直したい場合は、各項目の<b>『修正』</b>をタップしてください。", "bot");
+        msg("入力内容の確認です。内容を直したい場合は、各項目の<b>『修正する』</b>をタップしてください。", "bot");
         let h = '<table class="summary-table">';
-        const its = [{k:"名前",v:data.name,f:askName},{k:"連絡先",v:data.tel,f:askContact},{k:"症状",v:data.symptoms.join(' / '),f:askSymptoms},{k:"部位",v:data.parts.join(' / '),f:askParts},{k:"病歴",v:data.history.join(' / '),f:askHistory}];
+        
+        // ▼ 確認画面にも細かく反映 ▼
+        const its = [
+            {k:"名前",v:data.name,f:askName},
+            {k:"住所",v:data.address,f:askAddress},
+            {k:"電話",v:data.tel,f:askTel},
+            {k:"メール",v:data.email,f:askEmail},
+            {k:"症状",v:data.symptoms.join(' / '),f:askSymptoms},
+            {k:"部位",v:data.parts.join(' / '),f:askParts},
+            {k:"病歴",v:data.history.join(' / '),f:askHistory}
+        ];
         its.forEach((it, i) => { h += `<tr><th>${it.k}</th><td>${it.v}<span class="edit-link" onclick="edit(${i})">修正する</span></td></tr>`; });
         h += '</table>'; msg(h, "bot");
         window.edit = (i) => { msg(`${its[i].k}を修正します。`, "bot"); its[i].f(); };
@@ -101,8 +116,6 @@
         let pText = "<b>【女性の方へ】</b><br>妊娠中・授乳中など体調が悪い時は無理せず、また、何かありましたら女性スタッフにお声掛けください。<br><br>";
         pText += "<b>【キャンセルポリシー】</b><br>ご予約の変更は予約の前々日までにお電話かwebでのご予約の変更をお願いします。各患者さんに合わせた時間・スタッフ等を準備させていただき来院をお待ちしているからです。前日、当日の急なご予約の変更があった場合は保険診療3300円、自費診療で5500円が次回の診療でいただく場合がございます。<br><br>";
         pText += "<b>【治療算定において】</b><br>保険診療において治療回数および期間が定められております。そのため、入れ歯の調整など月に２回以降に関しては30分あたり2200円〜3300円費用がかかります。<br><br>";
-        
-        // ▼ 追加されたリスク・偶発症に関する免責事項 ▼
         pText += "<b>【治療におけるリスク・偶発症について】</b><br>治療には最善を尽くすようにさせていただいておりますが、症状や各患者さんの生活背景により、望まない結果になる場合もございます（例：虫歯の治療の過程でやむを得ず抜歯になる、抜歯等の外科処置のときに偶発症が生じる可能性があるなど）。何卒ご理解とご了承をお願いいたします。";
         
         msg("最後に以下の「診療前に」をご確認ください。スクロールして最後までお読みいただき、同意される場合はボタンを押して送信してください。", "bot");
